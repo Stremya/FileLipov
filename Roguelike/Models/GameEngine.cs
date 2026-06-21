@@ -49,9 +49,12 @@ namespace Roguelike.Models
         // === ГЕНЕРАЦИЯ УРОВНЯ ===
         private void GenerateLevel()
         {
+            System.Diagnostics.Debug.WriteLine("=== НАЧАЛО ГЕНЕРАЦИИ УРОВНЯ ===");
+
             // Создаем карту и генерируем уровень
             CurrentMap = new Map(MapWidth, MapHeight);
             CurrentMap.GenerateLevel();
+            System.Diagnostics.Debug.WriteLine($"Карта создана: {MapWidth}x{MapHeight}");
 
             // Создаем игрока на стартовой позиции
             CurrentPlayer = new Player(
@@ -60,12 +63,18 @@ namespace Roguelike.Models
                 maxHp: 100,
                 attackPower: 20
             );
+            System.Diagnostics.Debug.WriteLine($"Игрок создан на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
 
             // Спавним врагов
+            System.Diagnostics.Debug.WriteLine("Начинаем спавн врагов...");
             SpawnEnemies();
+            System.Diagnostics.Debug.WriteLine($"Врагов заспавнено: {Enemies.Count}");
 
             // Уведомляем UI
             GameStateChanged?.Invoke();
+
+            System.Diagnostics.Debug.WriteLine("=== КОНЕЦ ГЕНЕРАЦИИ УРОВНЯ ===");
+
         }
 
         // === ОСНОВНОЙ МЕТОД: ОБРАБОТКА ХОДА ===
@@ -196,39 +205,33 @@ namespace Roguelike.Models
         // === СПАВН ВРАГОВ ===
         private void SpawnEnemies()
         {
+            System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] Начало. Нужно заспавнить: {EnemiesPerLevel}");
+
             Random random = new Random();
             int enemiesSpawned = 0;
             int attempts = 0;
 
-            // Пытаемся разместить врагов на случайных проходимых клетках
             while (enemiesSpawned < EnemiesPerLevel && attempts < 100)
             {
                 int x = random.Next(0, MapWidth);
                 int y = random.Next(0, MapHeight);
 
-                // Проверка условия спавна:
-                // 1. Клетка проходима
-                // 2. Не на позиции игрока
-                // 3. Не на позиции выхода
-                // 4. Не на позиции другого врага
                 if (CurrentMap.IsWalkable(x, y) &&
                     !(x == CurrentPlayer.X && y == CurrentPlayer.Y) &&
                     !(x == CurrentMap.ExitX && y == CurrentMap.ExitY) &&
                     !Enemies.Any(e => e.X == x && e.Y == y))
                 {
-                    // Создаем врага (сила растет с уровнем)
-                    Enemy enemy = new Enemy(
-                        x,
-                        y,
-                        maxHp: 30 + (CurrentLevel * 5),
-                        attackPower: 10 + (CurrentLevel * 2)
-                    );
+                    Enemy enemy = new Enemy(x, y, maxHp: 30 + (CurrentLevel * 5), attackPower: 10 + (CurrentLevel * 2));
                     Enemies.Add(enemy);
                     enemiesSpawned++;
+                    System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] ✅ Враг #{enemiesSpawned} создан на ({x}, {y})");
                 }
 
                 attempts++;
             }
+
+            System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] Итого: {Enemies.Count} врагов за {attempts} попыток");
+
         }
     }
 }
