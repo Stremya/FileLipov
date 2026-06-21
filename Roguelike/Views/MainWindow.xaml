@@ -1,12 +1,52 @@
-﻿<Window x:Class="Roguelike.MainWindow"
+﻿<Window x:Class="Roguelike.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Roguelike"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        xmlns:vm="clr-namespace:Roguelike.ViewModels"
+        Title="Минималистичный Рогалик" Height="700" Width="700"
+        WindowStartupLocation="CenterScreen"
+        Focusable="True"
+        Loaded="Window_Loaded"
+        Background="#1E1E1E">
+
+    <Window.InputBindings>
+        <KeyBinding Key="W" Command="{Binding MovementCommand}" CommandParameter="Up"/>
+        <KeyBinding Key="Up" Command="{Binding MovementCommand}" CommandParameter="Up"/>
+
+        <KeyBinding Key="S" Command="{Binding MovementCommand}" CommandParameter="Down"/>
+        <KeyBinding Key="Down" Command="{Binding MovementCommand}" CommandParameter="Down"/>
+
+        <KeyBinding Key="A" Command="{Binding MovementCommand}" CommandParameter="Left"/>
+        <KeyBinding Key="Left" Command="{Binding MovementCommand}" CommandParameter="Left"/>
+
+        <KeyBinding Key="D" Command="{Binding MovementCommand}" CommandParameter="Right"/>
+        <KeyBinding Key="Right" Command="{Binding MovementCommand}" CommandParameter="Right"/>
+    </Window.InputBindings>
+
     <Grid>
-        
+        <Grid.RowDefinitions>
+            <RowDefinition Height="60"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="{Binding PlayerHP, StringFormat='HP: {0}'}" Foreground="LightGreen" FontSize="22" FontWeight="SemiBold" Margin="15,0"/>
+            <TextBlock Text="{Binding CurrentLevel, StringFormat='Этаж: {0}'}" Foreground="White" FontSize="22" FontWeight="SemiBold" Margin="15,0"/>
+            <TextBlock Text="{Binding Score, StringFormat='Очки: {0}'}" Foreground="Gold" FontSize="22" FontWeight="SemiBold" Margin="15,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Margin="20" BorderBrush="DimGray" BorderThickness="3" Background="Black">
+            <ItemsControl ItemsSource="{Binding MapCells}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding MapWidth}" Rows="{Binding MapHeight}"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Rectangle Fill="{Binding CellColor}" Margin="0.5" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
     </Grid>
 </Window>
