@@ -13,16 +13,25 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Roguelike
+using System.Windows;
+using Roguelike.ViewModels; // Убедись, что тут правильное название твоего проекта
+
+namespace Roguelike.Views
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
+
+            // Задаем DataContext, чтобы XAML увидел твою логику
+            DataContext = new MainViewModel();
+        }
+
+        // Событие Loaded, чтобы окно сразу могло перехватывать нажатия WASD
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.Focus();
         }
     }
 }

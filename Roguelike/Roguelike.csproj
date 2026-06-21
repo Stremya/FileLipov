@@ -65,6 +65,7 @@
     </Compile>
     <Compile Include="Models\Map.cs" />
     <Compile Include="Models\TileType.cs" />
+    <Compile Include="ViewsModels\BaseViewModel.cs" />
     <Compile Include="ViewsModels\MainViewModel.cs" />
     <Compile Include="Views\MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
