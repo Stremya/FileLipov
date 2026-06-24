@@ -2,22 +2,22 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Input;
-using System.Windows.Threading; 
+using System.Windows.Threading;
+using System.Windows.Media;
 using Roguelike.Models;
-using System.Windows.Media; 
 
 namespace Roguelike.ViewModels
 {
-    public enum AppState { MainMenu, Playing, GameOver }
+    // Все состояния игры на месте
+    public enum AppState { MainMenu, Playing, GameOver, PauseMenu }
 
     public class MapCell : BaseViewModel
     {
         private string _cellColor;
-        public string CellColor
-        {
-            get => _cellColor;
-            set => SetProperty(ref _cellColor, value);
-        }
+        public string CellColor { get => _cellColor; set => SetProperty(ref _cellColor, value); }
+
+        private string _cellText;
+        public string CellText { get => _cellText; set => SetProperty(ref _cellText, value); }
     }
 
     public class MainViewModel : BaseViewModel
@@ -28,9 +28,13 @@ namespace Roguelike.ViewModels
 
         public ObservableCollection<MapCell> MapCells { get; set; }
 
+        // --- ВСЕ КОМАНДЫ ДЛЯ КНОПОК ---
         public ICommand MovementCommand { get; }
         public ICommand StartGameCommand { get; }
         public ICommand GoToMenuCommand { get; }
+        public ICommand ToggleSoundCommand { get; }
+        public ICommand ExitCommand { get; }
+        public ICommand PauseCommand { get; }
 
         private AppState _currentState = AppState.MainMenu;
         public AppState CurrentState
@@ -42,12 +46,15 @@ namespace Roguelike.ViewModels
                 OnPropertyChanged(nameof(IsMainMenuVisible));
                 OnPropertyChanged(nameof(IsPlayingVisible));
                 OnPropertyChanged(nameof(IsGameOverVisible));
+                // Теперь интерфейс точно знает, когда показывать паузу!
+                OnPropertyChanged(nameof(IsPauseVisible));
             }
         }
 
         public bool IsMainMenuVisible => CurrentState == AppState.MainMenu;
         public bool IsPlayingVisible => CurrentState == AppState.Playing;
         public bool IsGameOverVisible => CurrentState == AppState.GameOver;
+        public bool IsPauseVisible => CurrentState == AppState.PauseMenu;
 
         public int MapWidth => 30;
         public int MapHeight => 20;
@@ -65,59 +72,64 @@ namespace Roguelike.ViewModels
             _engine.LevelChanged += UpdateView;
             _engine.GameOver += HandleGameOver;
 
-            // --- НАСТРОЙКА ТАЙМЕРА ВРАГОВ ---
             _enemyTimer = new DispatcherTimer();
-            _enemyTimer.Interval = TimeSpan.FromSeconds(0.8); // Скорость врагов (0.8 секунды на шаг)
+            _enemyTimer.Interval = TimeSpan.FromSeconds(0.8);
             _enemyTimer.Tick += EnemyTimer_Tick;
 
+            _bgMusic = new MediaPlayer();
+            _bgMusic.Open(new Uri("Sounds/bgm.mp3", UriKind.Relative));
+            _bgMusic.Volume = 0.3;
+            _bgMusic.MediaEnded += (s, e) => { _bgMusic.Position = TimeSpan.Zero; _bgMusic.Play(); };
+            _bgMusic.Play();
+
+            // Инициализация всех кнопок
             MovementCommand = new RelayCommand(ExecuteMovement);
             StartGameCommand = new RelayCommand((_) => StartNewGame());
             GoToMenuCommand = new RelayCommand((_) => GoToMenu());
+            ToggleSoundCommand = new RelayCommand((_) => _bgMusic.IsMuted = !_bgMusic.IsMuted);
+            ExitCommand = new RelayCommand((_) => System.Windows.Application.Current.Shutdown());
+            PauseCommand = new RelayCommand((_) => TogglePause());
 
             InitializeMapCells();
-            _bgMusic = new MediaPlayer();
-            // Указываем путь к нашему файлу
-            _bgMusic.Open(new Uri("Sounds/bgm.mp3", UriKind.Relative));
-            _bgMusic.Volume = 0.3; // Громкость (от 0.0 до 1.0, 0.3 - чтобы не оглохнуть)
-
-            // Зацикливаем музыку (когда трек кончится, он начнется заново)
-            _bgMusic.MediaEnded += (sender, args) =>
-            {
-                _bgMusic.Position = TimeSpan.Zero;
-                _bgMusic.Play();
-            };
-
-            // Врубаем музон прямо со старта (будет играть и в меню, и в игре)
-            _bgMusic.Play();
         }
 
-        // Событие, которое срабатывает каждый "тик" таймера
-        private void EnemyTimer_Tick(object sender, EventArgs e)
+        private void TogglePause()
         {
-            // Заставляем врагов ходить, передавая нули (игрок стоит на месте)
             if (CurrentState == AppState.Playing)
             {
-                _engine.ProcessTurn(0, 0);
+                _enemyTimer.Stop();
+                CurrentState = AppState.PauseMenu;
             }
+            else if (CurrentState == AppState.PauseMenu)
+            {
+                _enemyTimer.Start();
+                CurrentState = AppState.Playing;
+                UpdateView();
+            }
+        }
+
+        private void EnemyTimer_Tick(object sender, EventArgs e)
+        {
+            if (CurrentState == AppState.Playing) _engine.ProcessTurn(0, 0);
         }
 
         private void StartNewGame()
         {
             _engine.StartNewGame();
             CurrentState = AppState.Playing;
-            _enemyTimer.Start(); // ЗАПУСКАЕМ ВРАГОВ
+            _enemyTimer.Start();
             UpdateView();
         }
 
         private void HandleGameOver()
         {
-            _enemyTimer.Stop(); // ОСТАНАВЛИВАЕМ ВРАГОВ
+            _enemyTimer.Stop();
             CurrentState = AppState.GameOver;
         }
 
         private void GoToMenu()
         {
-            _enemyTimer.Stop(); // ОСТАНАВЛИВАЕМ ВРАГОВ
+            _enemyTimer.Stop();
             CurrentState = AppState.MainMenu;
         }
 
@@ -125,10 +137,7 @@ namespace Roguelike.ViewModels
         {
             MapCells.Clear();
             int totalCells = MapWidth * MapHeight;
-            for (int i = 0; i < totalCells; i++)
-            {
-                MapCells.Add(new MapCell { CellColor = "Black" });
-            }
+            for (int i = 0; i < totalCells; i++) MapCells.Add(new MapCell { CellColor = "Black", CellText = "" });
         }
 
         private void UpdateView()
@@ -141,19 +150,32 @@ namespace Roguelike.ViewModels
                 {
                     int index = y * MapWidth + x;
                     string color = "Black";
+                    string text = "";
 
                     if (_engine.CurrentMap.Grid[x, y] == TileType.Wall) color = "DarkGray";
                     else if (_engine.CurrentMap.Grid[x, y] == TileType.Floor) color = "LightGray";
                     else if (_engine.CurrentMap.Grid[x, y] == TileType.Exit) color = "Gold";
-
-                    if (_engine.Enemies.Any(e => e.X == x && e.Y == y)) color = "Red";
-
-                    if (_engine.CurrentPlayer != null && _engine.CurrentPlayer.X == x && _engine.CurrentPlayer.Y == y) color = "Blue";
-
-                    if (MapCells[index].CellColor != color)
+                    else if (_engine.CurrentMap.Grid[x, y] == TileType.HealthPotion)
                     {
-                        MapCells[index].CellColor = color;
+                        color = "Lime"; // Зеленые аптечки
+                        text = "✚";
                     }
+
+                    var enemy = _engine.Enemies.FirstOrDefault(e => e.X == x && e.Y == y);
+                    if (enemy != null)
+                    {
+                        color = "DarkRed";
+                        text = enemy.HP.ToString(); // ХП врагов
+                    }
+
+                    if (_engine.CurrentPlayer != null && _engine.CurrentPlayer.X == x && _engine.CurrentPlayer.Y == y)
+                    {
+                        color = "Blue";
+                        text = "☺";
+                    }
+
+                    if (MapCells[index].CellColor != color) MapCells[index].CellColor = color;
+                    if (MapCells[index].CellText != text) MapCells[index].CellText = text;
                 }
             }
 
@@ -164,10 +186,16 @@ namespace Roguelike.ViewModels
 
         private void ExecuteMovement(object parameter)
         {
-            if (CurrentState != AppState.Playing) return;
-
             if (parameter is string direction)
             {
+                if (direction == "Escape")
+                {
+                    TogglePause();
+                    return;
+                }
+
+                if (CurrentState != AppState.Playing) return;
+
                 int dx = 0, dy = 0;
                 if (direction == "Up") dy = -1;
                 else if (direction == "Down") dy = 1;
@@ -176,8 +204,6 @@ namespace Roguelike.ViewModels
 
                 _engine.ProcessTurn(dx, dy);
 
-                // Сбрасываем таймер при нашем шаге. 
-                // Это нужно, чтобы враг не сделал 2 шага подряд (один от нашего удара, второй от таймера)
                 _enemyTimer.Stop();
                 _enemyTimer.Start();
             }

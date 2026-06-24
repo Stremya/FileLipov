@@ -6,36 +6,24 @@ namespace Roguelike.Models
 {
     public class GameEngine
     {
-        // === СВОЙСТВА ===
         public Player CurrentPlayer { get; private set; }
         public List<Enemy> Enemies { get; private set; }
         public Map CurrentMap { get; private set; }
         public int CurrentLevel { get; private set; }
         public bool IsGameOver { get; private set; }
 
-        // флаг для ui чей сейчас ход
         public bool IsPlayerTurn { get; private set; } = true;
 
-        // === СОБЫТИЯ ДЛЯ UI ===
-        // Вызывается после каждого хода - UI должен обновиться
         public event Action GameStateChanged;
-
-        // Вызывается при переходе на новый уровень
         public event Action LevelChanged;
-
-        // Вызывается при поражении
         public event Action GameOver;
-
-        // для статусбара "Ваш ход" / "Ход врагов"
         public event Action<string> StatusMessage;
 
-        // === КОНСТАНТЫ ===
         private const int MapWidth = 30;
         private const int MapHeight = 20;
-        private const int EnemiesPerLevel = 2; // Врагов на каждом уровне
-        private const int HealthPotionHealAmount = 30; // Сколько HP восстанавливает аптечка
+        private const int EnemiesPerLevel = 2;
+        private const int HealthPotionHealAmount = 30;
 
-        // === КОНСТРУКТОР ===
         public GameEngine()
         {
             Enemies = new List<Enemy>();
@@ -43,156 +31,113 @@ namespace Roguelike.Models
             IsGameOver = false;
         }
 
-        // === ЗАПУСК НОВОЙ ИГРЫ ===
         public void StartNewGame()
         {
             CurrentLevel = 1;
             IsGameOver = false;
             Enemies.Clear();
-
-            // ДОБАВИТЬ ЭТУ СТРОЧКУ:
             CurrentPlayer = null;
-
             GenerateLevel();
         }
 
-        // === ГЕНЕРАЦИЯ УРОВНЯ ===
         private void GenerateLevel()
         {
-            System.Diagnostics.Debug.WriteLine("=== НАЧАЛО ГЕНЕРАЦИИ УРОВНЯ ===");
-
-            // Создаем карту и генерируем уровень
             CurrentMap = new Map(MapWidth, MapHeight);
             CurrentMap.GenerateLevel();
-            System.Diagnostics.Debug.WriteLine($"Карта создана: {MapWidth}x{MapHeight}");
 
-            // Создаем игрока на стартовой позиции
             if (CurrentPlayer == null)
             {
-                // Если это первый этаж, создаем игрока с нуля
-                CurrentPlayer = new Player(
-                    CurrentMap.PlayerStartX,
-                    CurrentMap.PlayerStartY,
-                    maxHp: 100,
-                    attackPower: 20
-                );
-                System.Diagnostics.Debug.WriteLine($"Игрок создан на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
+                CurrentPlayer = new Player(CurrentMap.PlayerStartX, CurrentMap.PlayerStartY, maxHp: 100, attackPower: 20);
             }
             else
             {
-                // Если мы перешли на новый этаж, просто меняем координаты старого игрока (очки и ХП сохраняются!)
                 CurrentPlayer.X = CurrentMap.PlayerStartX;
                 CurrentPlayer.Y = CurrentMap.PlayerStartY;
-                System.Diagnostics.Debug.WriteLine($"Игрок перенесен на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
             }
-            System.Diagnostics.Debug.WriteLine("Начинаем спавн врагов...");
+
             SpawnEnemies();
-            System.Diagnostics.Debug.WriteLine($"Врагов заспавнено: {Enemies.Count}");
+            SpawnHealthPotion(); // ИСПРАВЛЕНО: Теперь аптечки вызываются!
 
-            // Уведомляем UI
             GameStateChanged?.Invoke();
-
-            System.Diagnostics.Debug.WriteLine("=== КОНЕЦ ГЕНЕРАЦИИ УРОВНЯ ===");
         }
 
-        // === ОСНОВНОЙ МЕТОД: ОБРАБОТКА ХОДА ===
         public void ProcessTurn(int dx, int dy)
         {
-            // Если игра окончена - ничего не делаем
             if (IsGameOver) return;
 
-            // 1. Ход игрока
             ProcessPlayerMove(dx, dy);
 
-            // 2. Если игрок не умер - ходят враги
             if (!IsGameOver)
             {
                 ProcessEnemiesTurn();
             }
 
-            // 3. Уведомляем UI об изменениях
             GameStateChanged?.Invoke();
         }
 
-        // === ДВИЖЕНИЕ ИГРОКА ===
         private void ProcessPlayerMove(int dx, int dy)
         {
-            // Если игрок не двигается (dx=0, dy=0) - пропускаем ход
             if (dx == 0 && dy == 0) return;
 
             int newX = CurrentPlayer.X + dx;
             int newY = CurrentPlayer.Y + dy;
 
-            // Проверяем, есть ли враг на целевой клетке (bump-to-attack)
             Enemy targetEnemy = Enemies.FirstOrDefault(e => e.X == newX && e.Y == newY);
 
             if (targetEnemy != null)
             {
-                // Атакуем врага!
                 AttackEnemy(targetEnemy);
             }
             else if (CurrentMap.IsWalkable(newX, newY))
             {
-                // Двигаемся, если клетка проходима
                 CurrentPlayer.Move(dx, dy);
 
-                // Проверка на аптечку
                 if (CurrentMap.Grid[newX, newY] == TileType.HealthPotion)
                 {
                     CurrentPlayer.Heal(HealthPotionHealAmount);
-                    CurrentMap.Grid[newX, newY] = TileType.Floor; // Аптечка исчезает
+                    CurrentMap.Grid[newX, newY] = TileType.Floor;
                     StatusMessage?.Invoke($"+{HealthPotionHealAmount} HP! Аптечка подобрана!");
                 }
 
-                // Проверяем, дошел ли игрок до выхода
                 if (newX == CurrentMap.ExitX && newY == CurrentMap.ExitY)
                 {
                     NextLevel();
                 }
             }
-            // Иначе - игрок упирается в стену, ход теряется
         }
 
-        // === АТАКА ВРАГА (bump-to-attack) ===
         private void AttackEnemy(Enemy enemy)
         {
             enemy.TakeDamage(CurrentPlayer.AttackPower);
 
-            // Если враг умер - убираем его и начисляем очки
             if (enemy.HP <= 0)
             {
                 Enemies.Remove(enemy);
-                CurrentPlayer.Score += 50; // Очки за убийство врага
+                CurrentPlayer.Score += 50;
             }
         }
 
-        // === ХОД ВРАГОВ ===
         private void ProcessEnemiesTurn()
         {
-            foreach (var enemy in Enemies.ToList()) // ToList() чтобы безопасно удалять во время цикла
+            foreach (var enemy in Enemies.ToList())
             {
-                // Проверяем, соседствует ли враг с игроком (атака)
                 int distanceX = Math.Abs(enemy.X - CurrentPlayer.X);
                 int distanceY = Math.Abs(enemy.Y - CurrentPlayer.Y);
 
-                if (distanceX + distanceY == 1) // Враг рядом с игроком (по вертикали или горизонтали)
+                if (distanceX + distanceY == 1)
                 {
-                    // Враг атакует игрока
                     EnemyAttackPlayer(enemy);
                 }
                 else
                 {
-                    // Враг двигается к игроку
                     int oldX = enemy.X;
                     int oldY = enemy.Y;
 
                     enemy.MoveTowards(CurrentPlayer);
 
-                    // Проверяем, не врезался ли враг в стену или другого врага
                     if (!CurrentMap.IsWalkable(enemy.X, enemy.Y) ||
                         Enemies.Any(e => e != enemy && e.X == enemy.X && e.Y == enemy.Y))
                     {
-                        // Возвращаем на старую позицию
                         enemy.X = oldX;
                         enemy.Y = oldY;
                     }
@@ -200,12 +145,10 @@ namespace Roguelike.Models
             }
         }
 
-        // === АТАКА ВРАГА ПО ИГРОКУ ===
         private void EnemyAttackPlayer(Enemy enemy)
         {
             CurrentPlayer.TakeDamage(enemy.AttackPower);
 
-            // Проверяем, не умер ли игрок
             if (CurrentPlayer.HP <= 0)
             {
                 IsGameOver = true;
@@ -213,26 +156,16 @@ namespace Roguelike.Models
             }
         }
 
-        // === ПЕРЕХОД НА СЛЕДУЮЩИЙ УРОВЕНЬ ===
         public void NextLevel()
         {
             CurrentLevel++;
-
-            // Лечим игрока немного при переходе на новый уровень
             CurrentPlayer.Heal(20);
-
-            // Генерируем новый уровень
             GenerateLevel();
-
-            // Уведомляем UI
             LevelChanged?.Invoke();
         }
 
-        // === СПАВН ВРАГОВ ===
         private void SpawnEnemies()
         {
-            System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] Начало. Нужно заспавнить: {EnemiesPerLevel}");
-
             Random random = new Random();
             int enemiesSpawned = 0;
             int attempts = 0;
@@ -247,26 +180,23 @@ namespace Roguelike.Models
                     !(x == CurrentMap.ExitX && y == CurrentMap.ExitY) &&
                     !Enemies.Any(e => e.X == x && e.Y == y))
                 {
-                    Enemy enemy = new Enemy(x, y, maxHp: 30 + (CurrentLevel * 5), attackPower: 10 + (CurrentLevel * 2));
+                    // ИСПРАВЛЕНО: Нёрф врагов. Теперь урон = 3 + Уровень (а было 10 + Уровень*2)
+                    Enemy enemy = new Enemy(x, y, maxHp: 20 + (CurrentLevel * 5), attackPower: 3 + CurrentLevel);
                     Enemies.Add(enemy);
                     enemiesSpawned++;
-                    System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] ✅ Враг #{enemiesSpawned} создан на ({x}, {y})");
                 }
 
                 attempts++;
             }
-
-            System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] Итого: {Enemies.Count} врагов за {attempts} попыток");
-
         }
 
-        // === СПАВН АПТЕЧКИ ===
         private void SpawnHealthPotion()
         {
             Random random = new Random();
+            int potionsSpawned = 0; // ИСПРАВЛЕНО: Спавним 3 штуки, а не 1
             int attempts = 0;
 
-            while (attempts < 300)
+            while (potionsSpawned < 3 && attempts < 300)
             {
                 int x = random.Next(1, MapWidth - 1);
                 int y = random.Next(1, MapHeight - 1);
@@ -275,11 +205,11 @@ namespace Roguelike.Models
                     !(x == CurrentPlayer.X && y == CurrentPlayer.Y) &&
                     !(x == CurrentMap.ExitX && y == CurrentMap.ExitY) &&
                     !Enemies.Any(e => e.X == x && e.Y == y) &&
-                    !CurrentMap.IsInSameRoom(x, y, CurrentPlayer.X, CurrentPlayer.Y) && // Не в комнате игрока
-                    !CurrentMap.IsInSameRoom(x, y, CurrentMap.ExitX, CurrentMap.ExitY)) // И не в комнате выхода
+                    !CurrentMap.IsInSameRoom(x, y, CurrentPlayer.X, CurrentPlayer.Y) &&
+                    !CurrentMap.IsInSameRoom(x, y, CurrentMap.ExitX, CurrentMap.ExitY))
                 {
                     CurrentMap.Grid[x, y] = TileType.HealthPotion;
-                    return; 
+                    potionsSpawned++; // Увеличиваем счетчик заспавненных
                 }
                 attempts++;
             }

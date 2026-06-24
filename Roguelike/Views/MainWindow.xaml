@@ -12,6 +12,8 @@
     </Window.Resources>
 
     <Window.InputBindings>
+        <KeyBinding Key="Esc" Command="{Binding MovementCommand}" CommandParameter="Escape"/>
+
         <KeyBinding Key="W" Command="{Binding MovementCommand}" CommandParameter="Up"/>
         <KeyBinding Key="Up" Command="{Binding MovementCommand}" CommandParameter="Up"/>
         <KeyBinding Key="S" Command="{Binding MovementCommand}" CommandParameter="Down"/>
@@ -42,9 +44,13 @@
                             <UniformGrid Columns="{Binding MapWidth}" Rows="{Binding MapHeight}"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
+
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Rectangle Fill="{Binding CellColor}" Margin="0.5" />
+                            <Grid Margin="0.5">
+                                <Rectangle Fill="{Binding CellColor}" />
+                                <TextBlock Text="{Binding CellText}" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Grid>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
@@ -54,5 +60,17 @@
         <views:GameOverView Visibility="{Binding IsGameOverVisible, Converter={StaticResource BoolToVis}}"/>
 
         <views:MainMenuView Visibility="{Binding IsMainMenuVisible, Converter={StaticResource BoolToVis}}"/>
+
+        <Grid Visibility="{Binding IsPauseVisible, Converter={StaticResource BoolToVis}}" Background="#DD000000">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="ПАУЗА" FontSize="56" Foreground="White" FontWeight="Bold" Margin="0,0,0,40" HorizontalAlignment="Center"/>
+
+                <Button Content="Продолжить" Command="{Binding PauseCommand}" FontSize="24" Padding="30,10" Margin="0,0,0,15" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                <Button Content="Вкл/Выкл Звук" Command="{Binding ToggleSoundCommand}" FontSize="24" Padding="30,10" Margin="0,0,0,15" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                <Button Content="Выйти в главное меню" Command="{Binding GoToMenuCommand}" FontSize="24" Padding="30,10" Margin="0,0,0,15" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+                <Button Content="Выйти из игры" Command="{Binding ExitCommand}" FontSize="24" Padding="30,10" Background="DarkRed" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            </StackPanel>
+        </Grid>
+
     </Grid>
 </Window>

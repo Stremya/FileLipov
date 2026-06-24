@@ -3,8 +3,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Background="#1E1E1E">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="FileLipov" FontSize="48" Foreground="Gold" FontWeight="Bold" Margin="0,0,0,30" HorizontalAlignment="Center"/>
-            <Button Content="Начать игру" Command="{Binding StartGameCommand}" FontSize="24" Padding="30,10" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <!-- Заголовок -->
+            <TextBlock Text="FileLipov" FontSize="56" Foreground="Gold" FontWeight="Bold" Margin="0,0,0,40" HorizontalAlignment="Center"/>
+
+            <!-- Кнопки -->
+            <Button Content="Начать игру" Command="{Binding StartGameCommand}" FontSize="24" Padding="30,10" Margin="0,0,0,15" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="Мут звука" Command="{Binding ToggleSoundCommand}" FontSize="24" Padding="30,10" Margin="0,0,0,15" Background="DimGray" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button Content="Выйти из игры" Command="{Binding ExitCommand}" FontSize="24" Padding="30,10" Background="DarkRed" Foreground="White" BorderThickness="0" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </UserControl>
