@@ -19,6 +19,9 @@ namespace Roguelike.Models
         public int ExitX { get; private set; }
         public int ExitY { get; private set; }
 
+        // список всех комнат на карте
+        private List<(int x, int y, int w, int h)> _rooms;
+
         public Map(int width, int height)
         {
             Width = width;
@@ -84,6 +87,20 @@ namespace Roguelike.Models
             Grid[ExitX, ExitY] = TileType.Exit;
         }
 
+        // проверка находятся ли в той же комнате две точки
+        public bool IsInSameRoom(int x, int y, int refX, int refY)
+        {
+            foreach (var room in _rooms)
+            {
+                if (refX >= room.x && refX < room.x + room.w &&
+                    refY >= room.y && refY < room.y + room.h)
+                {
+                    return x >= room.x && x < room.x + room.w &&
+                           y >= room.y && y < room.y + room.h;
+                }
+            }
+            return false;
+        }
         public bool IsWalkable(int x, int y)
         {
             // Проверка выхода за границы карты

@@ -13,6 +13,9 @@ namespace Roguelike.Models
         public int CurrentLevel { get; private set; }
         public bool IsGameOver { get; private set; }
 
+        // флаг для ui чей сейчас ход
+        public bool IsPlayerTurn { get; private set; } = true;
+
         // === СОБЫТИЯ ДЛЯ UI ===
         // Вызывается после каждого хода - UI должен обновиться
         public event Action GameStateChanged;
@@ -23,10 +26,14 @@ namespace Roguelike.Models
         // Вызывается при поражении
         public event Action GameOver;
 
+        // для статусбара "Ваш ход" / "Ход врагов"
+        public event Action<string> StatusMessage;
+
         // === КОНСТАНТЫ ===
         private const int MapWidth = 30;
         private const int MapHeight = 20;
         private const int EnemiesPerLevel = 2; // Врагов на каждом уровне
+        private const int HealthPotionHealAmount = 30; // Сколько HP восстанавливает аптечка
 
         // === КОНСТРУКТОР ===
         public GameEngine()
@@ -128,6 +135,14 @@ namespace Roguelike.Models
             {
                 // Двигаемся, если клетка проходима
                 CurrentPlayer.Move(dx, dy);
+
+                // Проверка на аптечку
+                if (CurrentMap.Grid[newX, newY] == TileType.HealthPotion)
+                {
+                    CurrentPlayer.Heal(HealthPotionHealAmount);
+                    CurrentMap.Grid[newX, newY] = TileType.Floor; // Аптечка исчезает
+                    StatusMessage?.Invoke($"+{HealthPotionHealAmount} HP! Аптечка подобрана!");
+                }
 
                 // Проверяем, дошел ли игрок до выхода
                 if (newX == CurrentMap.ExitX && newY == CurrentMap.ExitY)
@@ -243,6 +258,31 @@ namespace Roguelike.Models
 
             System.Diagnostics.Debug.WriteLine($"[SpawnEnemies] Итого: {Enemies.Count} врагов за {attempts} попыток");
 
+        }
+
+        // === СПАВН АПТЕЧКИ ===
+        private void SpawnHealthPotion()
+        {
+            Random random = new Random();
+            int attempts = 0;
+
+            while (attempts < 300)
+            {
+                int x = random.Next(1, MapWidth - 1);
+                int y = random.Next(1, MapHeight - 1);
+
+                if (CurrentMap.IsWalkable(x, y) &&
+                    !(x == CurrentPlayer.X && y == CurrentPlayer.Y) &&
+                    !(x == CurrentMap.ExitX && y == CurrentMap.ExitY) &&
+                    !Enemies.Any(e => e.X == x && e.Y == y) &&
+                    !CurrentMap.IsInSameRoom(x, y, CurrentPlayer.X, CurrentPlayer.Y) && // Не в комнате игрока
+                    !CurrentMap.IsInSameRoom(x, y, CurrentMap.ExitX, CurrentMap.ExitY)) // И не в комнате выхода
+                {
+                    CurrentMap.Grid[x, y] = TileType.HealthPotion;
+                    return; 
+                }
+                attempts++;
+            }
         }
     }
 }
