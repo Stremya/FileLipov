@@ -26,7 +26,7 @@ namespace Roguelike.Models
         // === КОНСТАНТЫ ===
         private const int MapWidth = 30;
         private const int MapHeight = 20;
-        private const int EnemiesPerLevel = 3; // Врагов на каждом уровне
+        private const int EnemiesPerLevel = 2; // Врагов на каждом уровне
 
         // === КОНСТРУКТОР ===
         public GameEngine()
@@ -43,6 +43,9 @@ namespace Roguelike.Models
             IsGameOver = false;
             Enemies.Clear();
 
+            // ДОБАВИТЬ ЭТУ СТРОЧКУ:
+            CurrentPlayer = null;
+
             GenerateLevel();
         }
 
@@ -57,15 +60,24 @@ namespace Roguelike.Models
             System.Diagnostics.Debug.WriteLine($"Карта создана: {MapWidth}x{MapHeight}");
 
             // Создаем игрока на стартовой позиции
-            CurrentPlayer = new Player(
-                CurrentMap.PlayerStartX,
-                CurrentMap.PlayerStartY,
-                maxHp: 100,
-                attackPower: 20
-            );
-            System.Diagnostics.Debug.WriteLine($"Игрок создан на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
-
-            // Спавним врагов
+            if (CurrentPlayer == null)
+            {
+                // Если это первый этаж, создаем игрока с нуля
+                CurrentPlayer = new Player(
+                    CurrentMap.PlayerStartX,
+                    CurrentMap.PlayerStartY,
+                    maxHp: 100,
+                    attackPower: 20
+                );
+                System.Diagnostics.Debug.WriteLine($"Игрок создан на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
+            }
+            else
+            {
+                // Если мы перешли на новый этаж, просто меняем координаты старого игрока (очки и ХП сохраняются!)
+                CurrentPlayer.X = CurrentMap.PlayerStartX;
+                CurrentPlayer.Y = CurrentMap.PlayerStartY;
+                System.Diagnostics.Debug.WriteLine($"Игрок перенесен на ({CurrentPlayer.X}, {CurrentPlayer.Y})");
+            }
             System.Diagnostics.Debug.WriteLine("Начинаем спавн врагов...");
             SpawnEnemies();
             System.Diagnostics.Debug.WriteLine($"Врагов заспавнено: {Enemies.Count}");
@@ -74,7 +86,6 @@ namespace Roguelike.Models
             GameStateChanged?.Invoke();
 
             System.Diagnostics.Debug.WriteLine("=== КОНЕЦ ГЕНЕРАЦИИ УРОВНЯ ===");
-
         }
 
         // === ОСНОВНОЙ МЕТОД: ОБРАБОТКА ХОДА ===
