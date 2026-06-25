@@ -8,7 +8,6 @@ using Roguelike.Models;
 
 namespace Roguelike.ViewModels
 {
-    // Все состояния игры на месте
     public enum AppState { MainMenu, Playing, GameOver, PauseMenu }
 
     public class MapCell : BaseViewModel
@@ -28,7 +27,6 @@ namespace Roguelike.ViewModels
 
         public ObservableCollection<MapCell> MapCells { get; set; }
 
-        // --- ВСЕ КОМАНДЫ ДЛЯ КНОПОК ---
         public ICommand MovementCommand { get; }
         public ICommand StartGameCommand { get; }
         public ICommand GoToMenuCommand { get; }
@@ -46,7 +44,6 @@ namespace Roguelike.ViewModels
                 OnPropertyChanged(nameof(IsMainMenuVisible));
                 OnPropertyChanged(nameof(IsPlayingVisible));
                 OnPropertyChanged(nameof(IsGameOverVisible));
-                // Теперь интерфейс точно знает, когда показывать паузу!
                 OnPropertyChanged(nameof(IsPauseVisible));
             }
         }

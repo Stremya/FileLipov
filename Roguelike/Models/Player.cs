@@ -27,7 +27,7 @@ namespace Roguelike.Models
         public void Heal(int amount)
         {
             HP += amount;
-            if (HP > MaxHP) HP = MaxHP; // Здоровье не может превышать максимум
+            if (HP > MaxHP) HP = MaxHP; 
         }
     }
 }

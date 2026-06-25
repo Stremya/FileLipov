@@ -14,7 +14,6 @@ namespace Roguelike.ViewModels
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        // Метод OnPropertyChanged
         protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

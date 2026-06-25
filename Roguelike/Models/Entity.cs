@@ -9,7 +9,6 @@ namespace Roguelike.Models
 {
     public class Entity : INotifyPropertyChanged
     {
-        // Событие для обновления UI (WPF магия)
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName)
@@ -57,7 +56,7 @@ namespace Roguelike.Models
         public void TakeDamage(int amount)
         {
             HP -= amount;
-            if (HP < 0) HP = 0; // Здоровье не может быть меньше нуля
+            if (HP < 0) HP = 0; 
         }
     }
 }

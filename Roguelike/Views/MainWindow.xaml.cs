@@ -14,7 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 using System.Windows;
-using Roguelike.ViewModels; // Убедись, что тут правильное название твоего проекта
+using Roguelike.ViewModels; 
 
 namespace Roguelike.Views
 {
@@ -24,7 +24,6 @@ namespace Roguelike.Views
         {
             InitializeComponent();
 
-            // Задаем DataContext, чтобы XAML увидел твою логику
             DataContext = new MainViewModel();
         }
 

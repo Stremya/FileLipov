@@ -22,7 +22,6 @@ namespace Roguelike.Models
             int dy = 0;
 
             // Простой ИИ: движение по той оси, где расстояние до игрока больше
-            // Это обеспечивает движение по клеткам (4 направления), чтобы враги не "срезали углы" стен
             if (Math.Abs(player.X - X) > Math.Abs(player.Y - Y))
             {
                 dx = Math.Sign(player.X - X);

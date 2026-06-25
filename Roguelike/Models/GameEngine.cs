@@ -56,7 +56,7 @@ namespace Roguelike.Models
             }
 
             SpawnEnemies();
-            SpawnHealthPotion(); // ИСПРАВЛЕНО: Теперь аптечки вызываются!
+            SpawnHealthPotion(); 
 
             GameStateChanged?.Invoke();
         }
@@ -180,7 +180,6 @@ namespace Roguelike.Models
                     !(x == CurrentMap.ExitX && y == CurrentMap.ExitY) &&
                     !Enemies.Any(e => e.X == x && e.Y == y))
                 {
-                    // ИСПРАВЛЕНО: Нёрф врагов. Теперь урон = 3 + Уровень (а было 10 + Уровень*2)
                     Enemy enemy = new Enemy(x, y, maxHp: 20 + (CurrentLevel * 5), attackPower: 3 + CurrentLevel);
                     Enemies.Add(enemy);
                     enemiesSpawned++;
@@ -193,7 +192,7 @@ namespace Roguelike.Models
         private void SpawnHealthPotion()
         {
             Random random = new Random();
-            int potionsSpawned = 0; // ИСПРАВЛЕНО: Спавним 3 штуки, а не 1
+            int potionsSpawned = 0; 
             int attempts = 0;
 
             while (potionsSpawned < 3 && attempts < 300)
@@ -209,7 +208,7 @@ namespace Roguelike.Models
                     !CurrentMap.IsInSameRoom(x, y, CurrentMap.ExitX, CurrentMap.ExitY))
                 {
                     CurrentMap.Grid[x, y] = TileType.HealthPotion;
-                    potionsSpawned++; // Увеличиваем счетчик заспавненных
+                    potionsSpawned++; 
                 }
                 attempts++;
             }

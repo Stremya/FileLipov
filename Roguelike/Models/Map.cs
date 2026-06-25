@@ -14,7 +14,6 @@ namespace Roguelike.Models
         public int ExitX { get; private set; }
         public int ExitY { get; private set; }
 
-        // Исправлено: теперь это инициализированный список
         private List<(int x, int y, int w, int h)> _rooms;
 
         public Map(int width, int height)
@@ -22,12 +21,12 @@ namespace Roguelike.Models
             Width = width;
             Height = height;
             Grid = new TileType[width, height];
-            _rooms = new List<(int x, int y, int w, int h)>(); // ИНИЦИАЛИЗАЦИЯ
+            _rooms = new List<(int x, int y, int w, int h)>(); 
         }
 
         public void GenerateLevel()
         {
-            _rooms.Clear(); // Очищаем старые комнаты при новом уровне
+            _rooms.Clear(); 
 
             for (int x = 0; x < Width; x++)
             {
@@ -49,7 +48,7 @@ namespace Roguelike.Models
                 int roomY = random.Next(1, Height - roomHeight - 1);
 
                 rooms[i] = (roomX, roomY, roomWidth, roomHeight);
-                _rooms.Add(rooms[i]); // ИСПРАВЛЕНО: Добавляем комнату в память
+                _rooms.Add(rooms[i]); 
                 CreateRoom(roomX, roomY, roomWidth, roomHeight);
             }
 

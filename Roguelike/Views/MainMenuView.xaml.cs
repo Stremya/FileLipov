@@ -15,9 +15,7 @@ using System.Windows.Shapes;
 
 namespace Roguelike.Views
 {
-    /// <summary>
-    /// Логика взаимодействия для MainMenuView.xaml
-    /// </summary>
+
     public partial class MainMenuView : UserControl
     {
         public MainMenuView()
