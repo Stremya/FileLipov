@@ -76,11 +76,30 @@ namespace Roguelike.ViewModels
             _enemyTimer.Interval = TimeSpan.FromSeconds(0.8);
             _enemyTimer.Tick += EnemyTimer_Tick;
 
-            _bgMusic = new MediaPlayer();
-            _bgMusic.Open(new Uri("Sounds/bgm.mp3", UriKind.Relative));
-            _bgMusic.Volume = 0.3;
-            _bgMusic.MediaEnded += (s, e) => { _bgMusic.Position = TimeSpan.Zero; _bgMusic.Play(); };
-            _bgMusic.Play();
+            try
+            {
+                _bgMusic = new MediaPlayer();
+                _bgMusic.Volume = 0.3;
+                _bgMusic.MediaEnded += (s, e) => { _bgMusic.Position = TimeSpan.Zero; _bgMusic.Play(); };
+
+                _bgMusic.MediaOpened += (s, e) =>
+                {
+                    _bgMusic.Play();
+                    System.Diagnostics.Debug.WriteLine("✅ Музыка играет!");
+                };
+
+                _bgMusic.MediaFailed += (s, e) =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"❌ Ошибка загрузки музыки: {e.ErrorException?.Message}");
+                };
+
+                string path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sounds", "bgm.mp3");
+                _bgMusic.Open(new Uri(path));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"❌ Исключение: {ex.Message}");
+            }
 
             // Инициализация всех кнопок
             MovementCommand = new RelayCommand(ExecuteMovement);
